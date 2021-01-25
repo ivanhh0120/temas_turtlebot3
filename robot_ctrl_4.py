@@ -9,11 +9,11 @@ from math import atan2
 
 
 class RobotControl(object):
-    def __init__(self, tolerancia=0.1, linear_velocity=0.5, angular_velocity=0.1, x_goal= 2.0 , y_goal= 2.0):
+    def __init__(self, tolerancia=0.1, linear_velocity=0.5, angular_velocity=0.1, x_goal= -2.0 , y_goal= -2.0):
         rospy.init_node('ctrl_tarea02')
         self.velocity_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         self.odom_subscriber = rospy.Subscriber('/odom', Odometry, self.update_pose)
-        self.scan_subscriber = rospy.Subscriber('/scan',LaserScan, self.scan_callback_2)
+        self.scan_subscriber = rospy.Subscriber('/scan',LaserScan, self.sensorcallback)
         self.twist = Twist()
         self.set_Twist(linear_velocity, angular_velocity)
         self.pose = Pose()
@@ -21,36 +21,6 @@ class RobotControl(object):
         self.x_goal = x_goal
         self.y_goal = y_goal
         self.last_rotation = 0.0
-        self.a = 0.0
-        self.b = 0.0
-        self.c = 0.0
-        self.d = 0.0
-        self.ctrl_c = False
-        #self.rate = rospy.Rate(1)
-        rospy.on_shutdown(self.shutdownhook)
-
-
-    def scan_callback_2(self, msg):
-        self.a = msg.ranges[90]
-        self.b = msg.ranges[int(len(msg.ranges)/2)]
-        self.c = msg.ranges[180]
-        self.d = msg.ranges[1]
-    
-    def read_laser(self):
-        while not self.ctrl_c:
-            if self.b > 5:
-                self.b = 5
-            if self.a > 5:
-                self.a = 5
-            if self.c > 5:
-                self.c = 5
-            
-            print "a = "+ str(self.a)+" b = "+str(self.b)+" c = "+str(self.c)+" d = "+str(self.d)
-            #self.rate.sleep()
-    
-    def shutdownhook(self):
-
-        self.ctrl_c = True
 
     def set_Twist(self, linear_velocity, angular_velocity):
         self.twist.linear.x = linear_velocity # m/s
@@ -77,8 +47,6 @@ class RobotControl(object):
         rmax = msg.range_max
         s= msg.intensities 
         rospy.loginfo('rmin:{} rmax:{} i:{}'.format(rmin,rmax,s[160]))
-    
-    
 
     def switch_twist(self):
         self.set_Twist(self.twist.linear.x, -self.twist.angular.z)   
@@ -129,17 +97,7 @@ class RobotControl(object):
             else:
                 self.twist.angular.z = max(self.twist.angular.z, -1.5)
 
-            print " d = "+str(self.d)
-            if self.d <= 0.5:
-                self.twist.linear.x = 0.0
-                self.twist.angular.z = 0.0
-                self.velocity_publisher.publish(self.twist)
-                rospy.loginfo('se esta cumpliendo')
-            else:
-                pass
-
             self.last_rotation = theta
-            
             self.velocity_publisher.publish(self.twist)
     
     def theta(self):
