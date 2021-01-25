@@ -19,7 +19,8 @@ def sensorcallback(msg):
     rmin = msg.range_min
     rmax = msg.range_max
     s= msg.intensities 
-    rospy.loginfo('rmin:{} rmax:{} i:{}',format(rmin,rmax,s[160]))
+    rospy.loginfo('rmin:{} rmax:{} i:{}'.format(rmin,rmax,s[160]))
+
 def main():
     rospy.init_node('loc_monitor')
     rospy.Subscriber('/odom',Odometry,callback)
