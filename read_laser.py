@@ -17,9 +17,9 @@ class Robot():
         rospy.on_shutdown(self.shutdownhook)
 
     def scan_callback(self, msg):
-        self.a = msg.ranges[90]
-        self.b = msg.ranges[int(len(msg.ranges)/2)]
-        self.c = msg.ranges[180]
+        self.a = msg.ranges[45]
+        self.b = msg.ranges[-45]
+        self.c = msg.ranges[3]
         self.d = msg.ranges[1]
     
     def read_laser(self):
