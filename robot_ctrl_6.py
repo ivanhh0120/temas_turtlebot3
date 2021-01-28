@@ -47,12 +47,9 @@ class RobotControl(object):
                 self.a = 5
             if self.c > 5:
                 self.c = 5
-            
             print "a = "+ str(self.a)+" b = "+str(self.b)+" c = "+str(self.c)+" d = "+str(self.d)
-            #self.rate.sleep()
     
     def shutdownhook(self):
-
         self.ctrl_c = True
 
     def set_Twist(self, linear_velocity, angular_velocity):
@@ -73,42 +70,10 @@ class RobotControl(object):
         self.pose.position.y = round(self.pose.position.y, 4)
         self.pose.position.z = round(self.pose.position.z, 4)
         self.pose.orientation = self.pose.orientation
-
-
-    def sensorcallback(self, msg):
-        rmin = msg.range_min
-        rmax = msg.range_max
-        s= msg.intensities 
-        rospy.loginfo('rmin:{} rmax:{} i:{}'.format(rmin,rmax,s[160]))
-    
-    
-
-    def switch_twist(self):
-        self.set_Twist(self.twist.linear.x, -self.twist.angular.z)   
-    
-    def stop_twist(self):
-        self.set_Twist(0.0,0.0) 
-
-    def check_goal (self, timeout=False):
-        result = False
-        distance_goal = self.distancia_euclideana(self.x_goal, self.y_goal)
-        if distance_goal >= self.tolerancia: 
-            if not timeout:
-                self.stop_twist()
-                
-            else:
-                rospy.loginfo("omitido, estoy en timeout")
-            result = True    
-
-        rospy.loginfo("distancia a (0, 0): {} m".format(distance_goal))
-        self.velocity_publisher.publish(self.twist)
-
-        return result
     
     def check_goal_2 (self, linear_velocity, angular_velocity,timeout=False):
         distance_goal = self.distancia_euclideana(self.x_goal, self.y_goal)
         if distance_goal >= self.tolerancia: 
-            #self.update_pose(self)
             x_start = self.pose.position.x
             y_start = self.pose.position.y
             alpha = atan2(self.y_goal - y_start, self.x_goal- x_start)
@@ -118,47 +83,17 @@ class RobotControl(object):
                     alpha = -2*pi + alpha
                 elif self.y_goal >= 0 and y_start > self.y_goal:
                     alpha = 2*pi + alpha
-            #if self.last_rotation > pi-0.1 and theta <= 0:
-            #    theta = 2*pi + theta
-            #elif self.last_rotation < -pi+0.1 and theta > 0:
-            #    theta = -2*pi + theta
             self.twist.angular.z = angular_velocity * (alpha-theta)
-
             distance_goal = self.distancia_euclideana(self.x_goal, self.y_goal)
             self.twist.linear.x = min(linear_velocity * distance_goal, 0.1)
-
-            #if self.twist.angular.z > 0:
-            #    self.twist.angular.z = min(self.twist.angular.z, 1.5)
-            #else:
-            #    self.twist.angular.z = max(self.twist.angular.z, -1.5)
-
-           
-
             self.last_rotation = theta
-            
             self.velocity_publisher.publish(self.twist)
-        #else:
-        #    self.twist.angular.z =0.0
-        #    self.twist.linear.x =0.0
-        #    rospy.loginfo("stop")
-        #    self.rate.sleep()
-            
         
     
     def theta(self):
         oq = self.pose.orientation
         (roll, pitch, theta)=euler_from_quaternion([oq.x, oq.y, oq.z, oq.w])
         return theta
-    
-    def time_out(self, timeout=False):
-        result = False 
-        if not timeout:
-            self.check_goal_2(linear_velocity=0.5, angular_velocity=1.0)  
-            rospy.loginfo("avanzando y giro")
-        else:
-            
-            rospy.loginfo("omitido, estoy en timeout")
-        result = True  
 
 
 def main():
@@ -166,8 +101,6 @@ def main():
     rate = rospy.Rate(10)
     result = True   
     while not rospy.is_shutdown():
-        #result = robot_ctrl.check_goal(result)
-        
         if str(robot_ctrl.d) == "inf":
             robot_ctrl.d = 5.0
             rospy.loginfo("Robor_ctrl=5")
@@ -180,17 +113,14 @@ def main():
             rospy.loginfo('..........1')
         else:
             distance_goal = robot_ctrl.distancia_euclideana(robot_ctrl.x_goal, robot_ctrl.y_goal)
-            #result = robot_ctrl.time_out(result)
             if  distance_goal > robot_ctrl.tolerancia:
                 robot_ctrl.check_goal_2(linear_velocity=0.5, angular_velocity=1.0)
-            #if distance_goal <= robot_ctrl.tolerancia:
             else:
                 robot_ctrl.twist.linear.x = 0.0
                 robot_ctrl.twist.angular.z = 0.0
                 robot_ctrl.velocity_publisher.publish(robot_ctrl.twist)
                 rospy.loginfo("Stop")
             rospy.loginfo(distance_goal)
-            #robot_ctrl.check_goal_2(linear_velocity=0.5, angular_velocity=1.0)
         rospy.loginfo("Result: {}".format(result))
         rate.sleep()
 
